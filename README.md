@@ -205,8 +205,8 @@ divide the workload evenly.
 | Array pointer element type (current source) | `uint64_t` | `uint64_t` | `uint64_t` |
 | Requested allocation | ~800 MB | ~800 MB | ~800 MB |
 | Result collection | Shared atomic total | Per-thread slots | Per-thread slots |
->>>>>>> de23b7bc0bfc82f5761f78c45794a880a5406bbc
-| Expected sum | `5000000050000000` | `5000000050000000` | `5000000050000000` |
+
+
 
 ### Architectural Overview
 
@@ -251,7 +251,7 @@ Per-thread result slots
 Join workers and aggregate
 ```
 
-## Benchmark Results — Linux
+##  testcase Results — Linux
 
 The following timings were recorded on the Linux development host. The
 reported compiler flags were:
@@ -293,14 +293,12 @@ reported mean among these runs, followed closely by the per-thread slot
 implementation. On Android, the per-thread slot implementation had the
 lowest reported single-run time.
 
-These observations are specific to the recorded experiments. They do not
-establish a universal ranking because the Android data consists of single
+These observations are specific to the recorded experiments. 
+
+they do not establish a universal ranking because the Android data consists of single
 runs, and the workload and build settings must be verified before making a
 direct comparison.
 
-For a more reliable comparison, all three implementations should be rebuilt
-with identical input data and compiler settings, their results verified, and
-the measurements repeated under consistent conditions.
 
 ## 2. Bonus — ARM64 Execution on Android
 
@@ -432,7 +430,7 @@ The total number of candidates is:
 52^8 = 53,459,728,531,456
 ```
 
-password 1 is threadz 
+password 1 is threadz it came in around 5 mins i dint accurately measure it 
 password2 i ran the code for 15hrs but did not get any output though my 8 cores were running the program did not crash 
            the cores were not fixed as i dint uses any thread pining 
            so linux CFS was changing my threads(software) to run on differnt cores 
