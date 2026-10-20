@@ -194,12 +194,18 @@ divide the workload evenly.
 |---|---|---|---|
 | Work distribution | Static | Static | Dynamic |
 | Worker count | 4 | 4 | 4 |
+<<<<<<< HEAD
 | Intended input | Integers 1–100M | Integers 1–100M | Integers 1–100M |
 | Element type | `uint64_t` | `uint64_t` | `uint64_t` |
 | Local accumulation | Yes | Yes | Yes |
 | Shared atomic total | Yes | No | No |
 | Atomic work cursor | No | No | Yes |
 | Result collection | Atomic updates | Per-thread slots | Per-thread slots |
+=======
+| Array pointer element type (current source) | `uint64_t` | `uint64_t` | `uint64_t` |
+| Requested allocation | ~800 MB | ~800 MB | ~800 MB |
+| Result collection | Shared atomic total | Per-thread slots | Per-thread slots |
+>>>>>>> de23b7bc0bfc82f5761f78c45794a880a5406bbc
 | Expected sum | `5000000050000000` | `5000000050000000` | `5000000050000000` |
 
 ### Architectural Overview
