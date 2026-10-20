@@ -561,8 +561,6 @@ OpenSSL interface used by that program.
 
 The next steps for these experiments are:
 
-- Verify that all Task 1 implementations use identical input data and produce
-  the expected sum.
 - Repeat the benchmarks and report the median and variability alongside the
   mean.
 - Record compiler flags, device details, and actual program output for
@@ -580,7 +578,3 @@ programs examine atomic coordination, local accumulation, and dynamic work
 allocation, while the SHA-256 exercises explore parallel candidate generation
 and search-space partitioning.
 
-The benchmark results and Android experiment provide a starting point for
-further investigation. The main takeaway is that concurrency strategies
-involve trade-offs, and understanding those trade-offs requires both careful
-implementation and reproducible measurements.
