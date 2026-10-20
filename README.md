@@ -1,31 +1,33 @@
-# WEC Systems & Security SIG 2026 | Concurrency & Systems Programming in C
+WEC Systems & Security SIG 2026
+Concurrency & Systems Programming in C
 
-**M. Jaswin** · C11 / POSIX Threads · Atomics · Cache Coherency · Cryptographic Brute-Forcing
+Author: M. Jaswin
+Technologies: C11, POSIX Threads, C11 Atomics, SHA-256, Linux, Android Termux
 
-This repository contains my solutions and architectural explorations for the **WEC Systems & Security SIG (2026)** recruitment tasks. It consists of eight standalone C programs investigating a core systems engineering question: *when multiple threads attack the same workload, how should they partition the search space, synchronize shared state, and aggregate results without bottlenecking the CPU?*
+This repository contains my solutions and architectural explorations for the WEC Systems & Security SIG 2026 recruitment tasks. It explores concurrency, work distribution, synchronization, cache alignment, parallel reduction, and cryptographic candidate generation in C.
 
-The **Task 1 (Array Reduction)** programs compare shared atomic accumulation, cache-aligned per-thread result slots, and dynamic atomic chunk assignment. The dynamic version uses a shared atomic cursor; it is not a work-stealing queue. The repository also documents a reported ARM64 Termux exploration.
+The central question explored throughout the repository is:
 
-The **Task 2 (SHA-256 Cracker)** programs explore static versus dynamic prefix partitioning and recursive versus iterative candidate generation. They compare raw SHA-256 digests with `memcmp`; the repository has no string-formatting baseline or measured throughput comparison.
+When multiple threads process the same workload, how should work be partitioned, shared state synchronized, and results aggregated without introducing unnecessary coordination overhead?
 
----
+The repository contains two task groups:
 
-## What This Repository Explores
+Task 1 — Parallel Array Reduction: Compares shared atomic accumulation, per-thread result slots, and dynamic work allocation using an atomic cursor.
+Task 2 — SHA-256 Candidate Generation: Explores static and dynamic search-space partitioning, recursive and iterative candidate generation, and raw digest comparison.
 
-| Area | Implementation Focus |
-| :--- | :--- |
-| **Work Distribution** | Static index partitioning vs. dynamic atomic work tickets (`atomic_fetch_add`) |
-| **Synchronization** | C11 atomics, memory ordering, and cooperative early-termination flags (`atomic_load`) |
-| **Result Aggregation** | Shared atomic accumulator vs. thread-local reduction and post-join summation |
-| **Cache Layout** | 64-byte alignment (`alignas(64)`) for result slots in one program; cache effects are not benchmarked |
-| **Search Strategies** | Fixed-depth nested loops vs. recursive state-space traversal |
-| **Cross-Architecture (Bonus)** | x86_64 (Ubuntu/glibc) vs. ARM64 (Android Termux/Bionic `libc`) compilation and execution |
+Each source file is a standalone C program with its own main() function and is intended to be compiled independently.
 
----
-
-## Repository Map
-
-```text
+Table of Contents
+Repository Structure
+Task 1: Parallel Array Reduction
+Architectural Comparison
+Benchmark Results
+Bonus: ARM64 Execution on Android
+Task 2: SHA-256 Candidate Generation
+Build and Execution Guide
+Development Environment
+Limitations and Future Improvements
+Repository Structure
 .
 ├── task1_parallel_computing/
 │   ├── task1_atomic.c
@@ -41,150 +43,413 @@ The **Task 2 (SHA-256 Cracker)** programs explore static versus dynamic prefix p
 │   ├── c_cpp_properties.json
 │   └── tasks.json
 └── README.md
-```
 
-Each source file defines its own `main()` entry point and compiles independently.
+Task 1: Parallel Array Reduction
 
----
+Task 1 investigates three approaches to parallel array summation using four worker threads:
 
-## 1. Task 1: Parallel Array Reduction (100M Elements)
+Local accumulation followed by a shared atomic update.
+Local accumulation followed by writing to per-thread result slots.
+Dynamic chunk assignment using a shared atomic work cursor.
+Common Workload
 
-The first three programs compute the sum of 100,000,000 integers across 4 worker threads, evolving the memory access and synchronization patterns at each step.
+All three implementations are intended to process the same input array containing 100,000,000 consecutive integers from 1 to 100,000,000.
 
-In all three implementations, `clock_gettime(CLOCK_MONOTONIC)` starts immediately before thread creation and stops after all workers have joined and the final result has been collected. Allocation and array initialization are outside the timed interval. The timed interval includes thread creation, worker execution, joins, and result aggregation.
+Element type: uint64_t
+Array size: 100,000,000 elements
+Memory footprint: Approximately 800 MB (decimal), excluding other process memory
+Worker threads: 4
+Expected sum: 5000000050000000
 
-### `task1_atomic.c` — Local Accumulation with Shared Atomic Total
-* **Design:** Each of the 4 C11 worker threads receives a fixed, contiguous 25M-element slice of a `uint64_t` array (~800 MB). Each worker accumulates its slice locally and performs a single `atomic_fetch_add()` on the global total after processing its range.
-* **Trade-off:** The program performs four shared atomic read-modify-write updates, rather than one per array element. These updates may contend for the same atomic object's cache line if they overlap; this is not mutex lock contention, and no performance result is claimed.
+The mathematical sum is:
 
-### `task1_lockfree.c` — Cache-Aligned Per-Thread Slots
-* **Design:** Eliminates atomic instructions from the reduction path entirely. Each worker writes its final local sum into a dedicated slot in a global results array (`final_answers[thread_id]`), and `main()` performs a final sequential sweep after `thrd_join()`.
-* **Cache layout:** The result member uses `alignas(64)`. This gives the member 64-byte alignment, but the program does not query the target's cache-line size or measure cache traffic. Treat it as an alignment experiment, not a demonstrated false-sharing or performance result.
+𝑆
+=
+𝑁
+(
+𝑁
++
+1
+)
+2
 
-### `task1_dynamic_lockfree.c` — Dynamic Chunk Assignment
-* **Design:** Replaces static range slicing with a shared atomic work cursor. Workers repeatedly claim 10,000-element chunks via `atomic_fetch_add(&global_index, CHUNK_SIZE)`, sum the chunk locally, and repeat until all 10,000 elements-per-chunk claims are exhausted. Four additional claims terminate the workers after the cursor passes the array end.
-* **Trade-off Analysis:** Each worker claims chunks dynamically. With uniform-cost integer addition, the source does not demonstrate a load-balancing advantage over static partitioning. The cursor adds atomic read-modify-write coordination; no measured cost or speedup is claimed.
+For 
+𝑁
+=
+100,000,000
+:
 
-### Architectural Comparison
+5000000050000000
 
-```text
-STATIC PARTITIONING                      DYNAMIC PARTITIONING
-Assign fixed 25M index ranges            Shared atomic chunk cursor (10k elements)
-             |                                        |
-             v                                        v
-   Worker-local register sum               Workers claim chunks dynamically
-             |                                        |
-             v                                        v
-Shared atomic add OR aligned(64) slots     Worker-local totals -> result slots
-             |                                        |
-             v                                        v
-   Join workers & finish                    Join workers & aggregate in main()
-```
 
-| Program | Element Type | Heap Footprint | Expected Mathematical Sum |
-| :--- | :--- | :--- | :--- |
-| `task1_atomic.c` | `uint64_t` (1 to 100M) | ~800 MB | `5,000,000,050,000,000` |
-| `task1_lockfree.c` | `uint32_t` (all `50`s) | ~400 MB | `5,000,000,050,000` |
-| `task1_dynamic_lockfree.c` | `uint32_t` (all `1`s) | ~400 MB | `5,000,000,050,000` |
+The intended workload is identical across all three implementations. Their differences lie in work distribution, synchronization, and result aggregation.
 
-### Benchmark Status
+Timing Methodology
 
-#### Linux (host)
+Each Task 1 program uses clock_gettime(CLOCK_MONOTONIC) to measure elapsed wall-clock time.
 
-Five runs per implementation, compiled with GCC using
-`-O3 -std=gnu17 -Wall -Wextra -Wpedantic -pthread`. The terminal prompt
-identifies the machine as a Lenovo Yoga Slim 7 14IMH9. Times are in seconds.
+The timed interval starts immediately before thread creation and ends after all workers have joined and the final result has been collected.
 
-| Implementation | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 | Mean | Final sum |
-| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `task1_atomic.c` | 0.02306 | 0.02686 | 0.02304 | 0.02066 | 0.02694 | **0.02411** | `5000000050000000` |
-| `task1_dynamic_lockfree.c` | 0.01242 | 0.01218 | 0.01241 | 0.01275 | 0.01290 | **0.01253** | `5000000050000000` |
-| `task1_lockfree.c` | 0.01313 | 0.01330 | 0.01272 | 0.01328 | 0.01307 | **0.01310** | `5000000050000000` |
+Included in the timed interval:
 
-#### Android / Termux
+Thread creation
+Worker execution
+Thread joining
+Final result aggregation
 
-One reported run per implementation; times are in seconds. Compiler, flags,
-device details, and final-sum output were not provided.
+Excluded from the timed interval:
 
-| Implementation | Runs | Time (seconds) |
-| :--- | ---: | ---: |
-| `task1_atomic.c` | 1 | 0.02097 |
-| `task1_dynamic_lockfree.c` | 1 | 0.1352 |
-| `task1_lockfree.c` | 1 | 0.01179 |
+Array allocation
+Array initialization
 
-The Linux timings are from one host, and the Termux timings are single-run
-reports; neither should be generalized. The implementations have different
-data and work-distribution details, so compare their timings in that context.
+This measures the complete parallel execution phase rather than only the time spent processing array elements.
 
----
+1. task1_atomic.c — Shared Atomic Accumulator
 
-## 2. Bonus Task: ARM64 Execution on Android via Termux
+Design
 
-The author reports running `task1_lockfree.c` on an Android smartphone (ARM64 / `aarch64`) using **Termux**. See the benchmark table above for the reported timings; device details and reproducible output have not yet been added.
+Divides the array into four contiguous ranges of 25 million elements.
+Each worker calculates its partial sum locally.
+Each worker performs one atomic_fetch_add() operation to add its partial sum to a shared atomic total.
 
-### Native Compilation (Termux) vs. Cross-Compilation (NDK)
-There are two ways to build C binaries for Android:
+Synchronization
 
-1. **Cross-Compilation:** Compiling on an x86_64 Linux host using the Android NDK toolchain (`aarch64-linux-android-clang`) and pushing the binary via `adb push` to `/data/local/tmp`.
-2. **Native Compilation:** Running an ARM64 build of `clang` directly inside the Termux environment on the phone's CPU.
+The workers perform their main accumulation locally, avoiding atomic updates for individual array elements. Only the final partial sums are added to the shared total.
 
-### The Bionic `libc` & Threading Quirks
-Android and Ubuntu use different C libraries and may have different compiler/runtime support. Verify details against the specific Android device and Termux toolchain:
+Trade-offs
 
-* **Bionic `libc` Integration:** Unlike desktop Linux—where POSIX threads historically lived in a separate library requiring `-lpthread`—Android uses Google's **Bionic `libc`**, which bakes `pthread` directly into `libc.so`.
-* **C11 `<threads.h>` vs. `<pthread.h>`:** Older revisions of Bionic lacked full C11 `<threads.h>` (`thrd_create` / `thrd_join`) wrappers, making POSIX `<pthread.h>` the more portable standard across mobile toolchains, though modern Termux `clang` environments provide full support.
-* **Heterogeneous Core Scheduling:** The Android scheduler and SoC may have heterogeneous cores. The repository has no measurements showing worker placement or identifying memory bandwidth as a bottleneck.
+Performs four shared atomic read-modify-write operations.
+Avoids an atomic operation for every element.
+All workers update the same atomic object, which may introduce contention if the updates overlap.
+Atomic operations are not equivalent to mutex locking.
 
-### Termux Build & Execution Commands (Reported; Not Reproduced Here)
+Using C11 atomics does not automatically guarantee lock-free implementation on every platform; that depends on the atomic type and target implementation.
 
-```bash
-# Inside Termux (aarch64-linux-android)
-clang -O3 -std=c11 task1_lockfree.c -o sum_arm64 -lpthread
+2. task1_lockfree.c — Per-Thread Result Slots
+
+Design
+
+Uses the same input array as task1_atomic.c.
+Assigns each worker a fixed, non-overlapping range.
+Each worker calculates a local sum and stores it in a dedicated result slot.
+The main thread aggregates the partial sums after joining all workers.
+
+Synchronization
+
+The workers do not need a shared atomic accumulator. Each worker writes to a distinct result slot, and thrd_join() or the equivalent thread-joining operation establishes the synchronization needed before the main thread reads the results.
+
+Cache alignment
+
+The implementation uses alignas(64) for a result slot.
+
+This explores 64-byte alignment as a potential cache-layout consideration. The target cache-line size is not measured, and the implementation does not independently demonstrate that false sharing has been eliminated or that performance has improved.
+
+Trade-offs
+
+Eliminates shared atomic updates from the final reduction path.
+Keeps the primary accumulation local to each worker.
+Requires a final aggregation step after the workers finish.
+Cache alignment may influence memory layout, but its impact must be measured rather than assumed.
+3. task1_dynamic_lockfree.c — Dynamic Chunk Assignment
+
+Design
+
+Uses the same input array as the other Task 1 programs.
+Divides the workload into chunks of 10,000 elements.
+Uses a shared atomic cursor to assign chunks dynamically.
+Each worker accumulates its assigned elements locally and stores its final result in a per-thread slot.
+
+A worker claims a chunk using an operation equivalent to:
+
+atomic_fetch_add(&global_index, CHUNK_SIZE);
+
+
+The returned index identifies the beginning of the claimed chunk. Workers process valid indices, handle the array boundary, and continue requesting chunks until all elements have been covered.
+
+This implementation uses an atomic work cursor, not a work-stealing queue. Workers do not steal tasks from private queues belonging to other workers.
+
+Trade-offs
+
+Allocates work incrementally.
+Introduces atomic coordination for chunk allocation.
+Performs more shared atomic operations than the static-partitioning designs.
+Requires correct handling of the final partial chunk.
+Does not inherently improve load balancing for a uniform-cost operation such as integer addition.
+
+Dynamic scheduling can be useful when task execution times vary, but this implementation does not establish a load-balancing advantage or guarantee better performance than static partitioning.
+
+Expected Results
+Implementation	Work Distribution	Result Aggregation	Input Data	Expected Sum
+task1_atomic.c	Static ranges	Shared atomic total	Integers 1–100,000,000	5000000050000000
+task1_lockfree.c	Static ranges	Per-thread result slots	Integers 1–100,000,000	5000000050000000
+task1_dynamic_lockfree.c	Dynamic chunks of 10,000	Per-thread result slots	Integers 1–100,000,000	5000000050000000
+
+All three programs should produce the same mathematical result when they process the same input correctly and every element is counted exactly once.
+
+Architectural Comparison
+STATIC PARTITIONING
+        |
+        v
+Assign fixed ranges to workers
+        |
+        v
+Each worker calculates a local sum
+        |
+        +-----------------------------+
+        |                             |
+        v                             v
+Shared atomic total             Per-thread result slots
+        |                             |
+        +--------------+--------------+
+                       |
+                       v
+              Join all workers
+                       |
+                       v
+                Final result
+
+
+DYNAMIC PARTITIONING
+        |
+        v
+Shared atomic work cursor
+        |
+        v
+Workers claim 10,000-element chunks
+        |
+        v
+Each worker calculates a local sum
+        |
+        v
+Per-thread result slots
+        |
+        v
+Join workers and aggregate results
+
+Feature	task1_atomic.c	task1_lockfree.c	task1_dynamic_lockfree.c
+Work allocation	Static	Static	Dynamic
+Input type	uint64_t	uint64_t	uint64_t
+Input values	1 to 100 million	1 to 100 million	1 to 100 million
+Array size	100 million	100 million	100 million
+Worker count	4	4	4
+Local accumulation	Yes	Yes	Yes
+Shared atomic accumulator	Yes	No	No
+Atomic work cursor	No	No	Yes
+Result collection	Atomic updates	Per-thread slots	Per-thread slots
+Expected sum	5000000050000000	5000000050000000	5000000050000000
+Benchmark Results
+Linux Host
+
+The following measurements were reported from the development host using GCC with these flags:
+
+-O3 -std=gnu17 -Wall -Wextra -Wpedantic -pthread
+
+
+The terminal prompt identified the machine as a Lenovo Yoga Slim 7 14IMH9.
+
+Each implementation was reportedly run five times.
+
+Implementation	Run 1 (s)	Run 2 (s)	Run 3 (s)	Run 4 (s)	Run 5 (s)	Mean (s)	Expected Sum
+task1_atomic.c	0.02306	0.02686	0.02304	0.02066	0.02694	0.02411	5000000050000000
+task1_dynamic_lockfree.c	0.01242	0.01218	0.01241	0.01275	0.01290	0.01253	5000000050000000
+task1_lockfree.c	0.01313	0.01330	0.01272	0.01328	0.01307	0.01310	5000000050000000
+
+The expected sums in the table are mathematical expectations, not a claim that every recorded run was independently verified.
+
+Android / Termux
+
+The following timings were reported from an Android device using a MediaTek Dimensity 8450 processor and Termux.
+
+Implementation	Runs	Reported Time (s)	Expected Sum
+task1_atomic.c	1	0.02097	5000000050000000
+task1_dynamic_lockfree.c	1	0.13520	5000000050000000
+task1_lockfree.c	1	0.01179	5000000050000000
+
+The Android timings are single-run reports. The device model, compiler version, compiler flags, and actual output logs were not supplied with the measurements.
+
+Interpreting the Results
+
+These measurements are preliminary observations, not a controlled performance study.
+
+The Linux measurements come from one host.
+The Android measurements contain only one reported run per implementation.
+The timing interval includes thread creation, worker execution, joining, and result aggregation.
+No CPU-affinity, cache-traffic, hardware-counter, or memory-bandwidth measurements were supplied.
+Equivalent input data and compiler settings must be confirmed before making direct performance comparisons.
+
+The timings do not establish a general performance ranking across processors or architectures. For a rigorous comparison, all three programs should be rebuilt with the same workload and compiler settings, their outputs verified, and the measurements repeated.
+
+Bonus: ARM64 Execution on Android
+
+The author reports exploring task1_lockfree.c on an Android device powered by the MediaTek Dimensity 8450, using Termux.
+
+This exercise investigates portability between an x86-64 Linux development environment and an ARM64 Android userspace environment.
+
+Native Compilation with Termux
+
+Native compilation runs the compiler directly on the Android device.
+
+Install the compiler from Termux:
+
+pkg update
+pkg install clang
+
+
+From the repository root, compile and run the program:
+
+clang -O3 -std=c11 -Wall -Wextra \
+  task1_parallel_computing/task1_lockfree.c \
+  -o sum_arm64 -pthread
+
 ./sum_arm64
-```
 
----
 
-## 3. Task 2: SHA-256 Candidate-Generation Exercises
+These commands assume the source uses the C11 threading APIs or otherwise supports the selected compiler and flags. Confirm that the actual source code and installed toolchain are compatible.
 
-The repository contains five Task 2 programs: `password1_static.c`,
-`password1_dynamic.c`, `password2_recursive.c`, `password2_forloops.c`, and
-`pass2(assumed 8  letters is password).c`. This README leaves out their
-implementation details and build/run commands. These sources do not print
-elapsed search times; timing instrumentation is limited to the three array
-reduction programs.
+Cross-Compilation with the Android NDK
 
----
+An alternative is to compile on an x86-64 Linux host using the Android NDK toolchain, then transfer the resulting executable to a compatible Android environment.
 
-## 4. Build & Execution Guide
+The ARM64 compiler executable commonly follows a naming pattern similar to:
 
-### Prerequisites (Ubuntu 24.04 LTS / Debian)
-Ensure `gcc` and POSIX pthread support are available:
+aarch64-linux-android<API-level>-clang
 
-```bash
+
+The exact path and API-level suffix depend on the installed NDK version and configuration. Deployment also depends on Android permissions and the target execution environment.
+
+Bionic libc and Threading Portability
+
+Android uses Bionic libc, whereas Ubuntu typically uses glibc. Differences between these environments can affect compiler behavior, language-library availability, and linking requirements.
+
+POSIX threads: Bionic provides pthread functionality through the system C library. Exact linking requirements depend on the toolchain.
+C11 threads: Availability of <threads.h>, thrd_create(), and thrd_join() depends on the Android environment and compiler/library configuration. Verify support on the actual device.
+Heterogeneous CPU scheduling: Android devices may use heterogeneous CPU cores. Scheduling and core placement can affect performance, but this repository does not measure worker placement or establish a memory-bandwidth bottleneck.
+
+The reported Android timings are exploratory and should not be generalized to all ARM64 devices.
+
+Task 2: SHA-256 Candidate Generation
+
+Task 2 explores candidate generation and search-space partitioning for SHA-256 digest matching.
+
+The repository contains five standalone programs:
+
+Source File	Focus
+password1_static.c	Static search-space partitioning
+password1_dynamic.c	Dynamic search-space partitioning
+password2_recursive.c	Recursive candidate generation
+password2_forloops.c	Iterative candidate generation using nested loops
+pass2(assumed 8 letters is password).c	Candidate search under an assumed eight-character length
+Digest Comparison
+
+The implementations compare raw SHA-256 digest bytes using memcmp() rather than converting each digest to a hexadecimal string before comparison.
+
+This avoids hexadecimal formatting in the comparison path. However, the repository does not include a string-formatting baseline or a measured throughput comparison, so no quantitative performance improvement is claimed.
+
+Static vs. Dynamic Search Partitioning
+
+Static partitioning assigns predetermined portions of the search space to workers. Dynamic partitioning distributes work as workers request it.
+
+Their relative performance depends on candidate-generation costs, chunk sizes, synchronization overhead, and how evenly the workload is distributed.
+
+Recursive vs. Iterative Candidate Generation
+
+Recursive generation expresses candidate construction as a traversal through successive positions in the search space. Iterative generation uses nested loops to enumerate candidates with a fixed structure.
+
+The appropriate approach depends on candidate length, character set, implementation complexity, and resource constraints.
+
+Measurement Status
+
+The Task 2 programs do not currently report elapsed search times. The repository therefore documents implementation approaches rather than a measured performance comparison between the candidate-generation strategies.
+
+Build and Execution Guide
+Prerequisites
+
+On Ubuntu 24.04 LTS or Debian-based Linux distributions, install GCC and the standard development tools:
+
 sudo apt update
 sudo apt install build-essential
-```
 
-### Compiling Task 1 (Parallel Array Sum)
+Compile and Run Task 1
 
-```bash
-# 1. Shared Atomic Accumulator
-gcc -std=gnu17 -O3 -Wall -Wextra -pthread \
-  task1_parallel_computing/task1_atomic.c -o /tmp/task1_atomic && /tmp/task1_atomic
+Run these commands from the repository root.
 
-# 2. Cache-Aligned Per-Thread Slots
-gcc -std=gnu17 -O3 -Wall -Wextra -pthread \
-  task1_parallel_computing/task1_lockfree.c -o /tmp/task1_lockfree && /tmp/task1_lockfree
+1. Shared atomic accumulator
 
-# 3. Dynamic Chunk Queue
-gcc -std=gnu17 -O3 -Wall -Wextra -pthread \
-  task1_parallel_computing/task1_dynamic_lockfree.c -o /tmp/task1_dynamic_lockfree && /tmp/task1_dynamic_lockfree
-```
+gcc -std=gnu17 -O3 -Wall -Wextra -Wpedantic -pthread \
+  task1_parallel_computing/task1_atomic.c \
+  -o /tmp/task1_atomic
 
----
+/tmp/task1_atomic
 
-## 5. Development Environment
 
-* **Primary Host:** Lenovo Yoga Slim 7i · Intel Core Ultra 9 185H (x86_64) · 32 GB LPDDR5X · Ubuntu 24.04 LTS (`gcc 13.3.0`, OpenSSL 3.0)
-* **Mobile Target (Bonus Task):** Android   (ARM64 / `aarch64`) · Termux (`clang`, Bionic `libc`)
+2. Per-thread result slots
+
+gcc -std=gnu17 -O3 -Wall -Wextra -Wpedantic -pthread \
+  task1_parallel_computing/task1_lockfree.c \
+  -o /tmp/task1_lockfree
+
+/tmp/task1_lockfree
+
+
+3. Dynamic chunk assignment
+
+gcc -std=gnu17 -O3 -Wall -Wextra -Wpedantic -pthread \
+  task1_parallel_computing/task1_dynamic_lockfree.c \
+  -o /tmp/task1_dynamic_lockfree
+
+/tmp/task1_dynamic_lockfree
+
+
+Compile each source file separately because each defines its own main() function.
+
+Task 2 Build Requirements
+
+The exact compilation commands depend on the headers and cryptographic library used by each source file.
+
+If a program uses OpenSSL's SHA-256 interface, install the OpenSSL development package:
+
+sudo apt install libssl-dev
+
+
+A typical compilation command for a program that uses OpenSSL is:
+
+gcc -O3 -std=gnu17 -Wall -Wextra -pthread \
+  path/to/source.c -o /tmp/task2_program -lcrypto
+
+
+Replace path/to/source.c with the appropriate source path. This command applies only if the program uses OpenSSL and its source is compatible with the installed library.
+
+Development Environment
+Primary Development Host
+Laptop: Lenovo Yoga Slim 7i
+Processor: Intel Core Ultra 9 185H
+Architecture: x86-64
+Memory: 32 GB LPDDR5X
+Operating System: Ubuntu 24.04 LTS
+Compiler: GCC 13.3.0
+Cryptographic Library: OpenSSL 3.0
+Mobile Target
+Processor: MediaTek Dimensity 8450
+Platform: Android
+Architecture: ARM64 (aarch64)
+Environment: Termux
+Compiler: Clang
+C Library: Android Bionic in the native Android environment
+Limitations and Future Improvements
+
+The repository focuses on implementation and architectural exploration. The following improvements would strengthen the experiments and make the results more reproducible.
+
+Validate output correctness: Capture the actual final sum from each implementation.
+Standardize benchmarks: Use identical input data, compiler flags, and timing boundaries.
+Increase sample sizes: Perform more repetitions and report the mean, median, and variability.
+Record system details: Include compiler versions, device details, build commands, and relevant system configuration.
+Investigate cache effects: Use profiling tools or hardware performance counters rather than inferring cache behavior from alignment alone.
+Measure Task 2 execution: Add elapsed-time reporting and document the search-space size and stopping conditions.
+Improve portability documentation: Record the Android device details, Termux package versions, compiler flags, and actual program output.
+Conclusion
+
+These projects explore practical systems programming concepts through standalone C implementations. Task 1 examines static and dynamic work distribution, atomic coordination, local accumulation, and result aggregation using a common array workload. Task 2 explores candidate-generation strategies and parallel search-space partitioning for SHA-256 digest matching.
+
+The emphasis is on understanding implementation trade-offs, validating correctness, exploring cross-architecture portability, and distinguishing measured observations from assumptions about performance.
+
+
