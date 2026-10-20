@@ -135,7 +135,7 @@ not inherently improve load balancing over static ranges.
 |---|---|---|---|
 | Work distribution | Static ranges | Static ranges | Dynamic chunks (10,000) |
 | Worker count | 4 | 4 | 4 |
-| Array pointer element type (current source) | `uint64_t` | `uint32_t` | `uint32_t` |
+| Array pointer element type (current source) | `uint64_t` | `uint64_t` | `uint64_t` |
 | Requested allocation | ~800 MB | ~800 MB | ~800 MB |
 | Result collection | Shared atomic total | Per-thread slots | Per-thread slots |
 | Expected sum | `5000000050000000` | `5000000050000000` | `5000000050000000` |
