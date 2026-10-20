@@ -38,7 +38,7 @@ int worker_thread(void* arg) {
 }
 
 int main() {
-    massive_array = (uint32_t*)malloc(ARRAY_SIZE * sizeof(uint32_t));
+    massive_array = (uint64_t*)malloc(ARRAY_SIZE * sizeof(uint64_t));
     if (!massive_array) {
         printf("Memory allocation failed!\n");
         return 1;
