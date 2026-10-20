@@ -45,7 +45,7 @@ int main() {
     }
     
     for (size_t i = 0; i < ARRAY_SIZE; i++) {
-        massive_array[i] = 50; 
+        massive_array[i] = i+1; 
     }
 
     thrd_t threads[NUM_THREADS];
@@ -55,13 +55,22 @@ int main() {
     for (int i = 0; i < NUM_THREADS; i++) {
         thread_info[i].thread_id = i;
         thread_info[i].start_idx = i * chunk_size;
-        thread_info[i].end_idx = (i + 1) * chunk_size;
+
+        if (i == NUM_THREADS - 1) {
+            thread_info[i].end_idx = ARRAY_SIZE; // Last thread takes the remainder
+        } else {
+            thread_info[i].end_idx = (i + 1) * chunk_size;
+        }
     }
 
     struct timespec start_time, end_time;
 
     // 1. START TIMER: Right before spawning threads
-    clock_gettime(CLOCK_MONOTONIC, &start_time);  
+    if (clock_gettime(CLOCK_MONOTONIC, &start_time) != 0) {
+        perror("clock_gettime");
+        free(massive_array);
+        return 1;
+    }
 
     for (int i = 0; i < NUM_THREADS; i++) {
         thrd_create(&threads[i], worker_thread, &thread_info[i]);
@@ -71,13 +80,17 @@ int main() {
         thrd_join(threads[i], NULL); 
     }
 
-    // 2. STOP TIMER: The exact moment all threads have joined
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-
     // Aggregate the grand total in main()
     uint64_t total_sum = 0;
     for (int i = 0; i < NUM_THREADS; i++) {
         total_sum += final_answers[i].sum;
+    }
+
+    // Stop timing after joining workers and aggregating their results.
+    if (clock_gettime(CLOCK_MONOTONIC, &end_time) != 0) {
+        perror("clock_gettime");
+        free(massive_array);
+        return 1;
     }
 
     // Calculate time taken in seconds

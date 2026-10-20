@@ -80,14 +80,18 @@ int main()
  struct timespec start_time, end_time;
 
     // 1. START TIMER: Right before spawning threads
-    clock_gettime(CLOCK_MONOTONIC, &start_time);  
+    if (clock_gettime(CLOCK_MONOTONIC, &start_time) != 0)
+    {
+        perror("clock_gettime");
+        free(massive_array);
+        return 1;
+    }
 
     for (int i = 0; i < NUM_THREADS; i++) {
         thrd_create(&threads[i], sum_array_chunk, &thread_data[i]);
     }
 
 
-    printf("waiting for threads to finish \n");
     for (int i = 0; i < NUM_THREADS; i++)
     {
         int status = thrd_join(threads[i], NULL);
@@ -96,18 +100,21 @@ int main()
             printf("error joining threads %d\n", i);
         }
     }
-    // Stop the stopwatch the exact moment the last thread joins!
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    uint64_t final_sum = atomic_load(&total_sum);
+
+    if (clock_gettime(CLOCK_MONOTONIC, &end_time) != 0)
+    {
+        perror("clock_gettime");
+        free(massive_array);
+        return 1;
+    }
 
     // Calculate the difference in seconds
     double time_taken = (end_time.tv_sec - start_time.tv_sec) +
                         (end_time.tv_nsec - start_time.tv_nsec) / 1000000000.0;
 
     printf("Time taken: %.5f seconds\n", time_taken);
-
     printf("all threads finished \n");
-    uint64_t final_sum = atomic_load(&total_sum);
-
     printf("final sum = %lu \n", (unsigned long)final_sum);
     free(massive_array);
     return 0;

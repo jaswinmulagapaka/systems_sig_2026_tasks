@@ -1,0 +1,20 @@
+gcc -O3 -std=gnu17 -Wall -Wextra -Wpedantic -pthread task1_parallel_computing/task1_dynamic_lockfree.c -o /tmp/task1_dynamic_lockfree && /tmp/task1_dynamic_lockfree
+
+gcc -O3 -std=gnu17 -Wall -Wextra -Wpedantic -pthread task1_parallel_computing/task1_atomic.c -o /tmp/task1_atomic && /tmp/task1_atomic
+
+gcc -O3 -std=gnu17 -Wall -Wextra -Wpedantic -pthread task1_parallel_computing/task1_lockfree.c -o /tmp/task1_lockfree && /tmp/task1_lockfree
+
+
+gcc task2_parallel_computing/password1_static.c -o /tmp/password1_static -pthread -lcrypto
+
+
+gcc task2_parallel_computing/password1_dynamic.c -o /tmp/password1_dynamic -pthread -lcrypto
+
+
+gcc task2_parallel_computing/password2_recursive.c -o /tmp/password2_recursive -pthread -lcrypto
+
+
+gcc task2_parallel_computing/password2_forloops.c -o /tmp/password2_forloops -pthread -lcrypto
+
+
+gcc 'task2_parallel_computing/pass2(assumed 8  letters is password).c' -o /tmp/pass2_case_variants -lcrypto
