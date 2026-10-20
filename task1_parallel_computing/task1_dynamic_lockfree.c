@@ -60,7 +60,7 @@ int sum_thread(void *arg)
 
 int main()
 {
-    printf("[*] Allocating 400MB array on the Heap...\n");
+  
     massive_array = (uint64_t *)malloc(ARRAY_SIZE * sizeof(uint64_t));
 
     if (massive_array == NULL)
