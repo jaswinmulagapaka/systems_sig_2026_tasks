@@ -486,6 +486,7 @@ gcc -std=gnu17 -O3 -Wall -Wextra -Wpedantic -pthread \
 
 These commands assume the source files use OpenSSL's SHA-256 interfaces and
 the corresponding headers.
+Optimized SHA-256 hot loops by replacing slow string formatting (sprintf/strcmp) with raw 32-byte binary memcmp and compiler barriers (atomic_load).
 
 #### Password 1 — Static partitioning
 
