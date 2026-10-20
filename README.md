@@ -434,7 +434,7 @@ password 1 is threadz it came in around 5 mins i dint accurately measure it
 password2 i ran the code for 15hrs but did not get any output though my 8 cores were running the program did not crash 
            the cores were not fixed as i dint uses any thread pining 
            so linux CFS was changing my threads(software) to run on differnt cores 
-
+          so i got a guess and checked password all 56 combinations but it did not match lol 
 
 ### Measurement Status
 
