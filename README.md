@@ -432,15 +432,11 @@ The total number of candidates is:
 52^8 = 53,459,728,531,456
 ```
 
-A reported 15-hour run did not find a matching digest.
+password 1 is threadz 
+password2 i ran the code for 15hrs but did not get any output though my 8 cores were running the program did not crash 
+           the cores were not fixed as i dint uses any thread pining 
+           so linux CFS was changing my threads(software) to run on differnt cores 
 
-That observation alone does not establish that the target password lies
-outside the character set. The search may not have covered the target
-candidate yet, and the result depends on the candidate ordering, actual hash
-throughput, and stopping conditions.
-
-This experiment illustrates why the size of a search space and the amount of
-work completed are important when evaluating brute-force approaches.
 
 ### Measurement Status
 
@@ -560,7 +556,7 @@ OpenSSL interface used by that program.
 ## 6. Future Improvements
 
 The next steps for these experiments are:
-
+- use thread pining 
 - Repeat the benchmarks and report the median and variability alongside the
   mean.
 - Record compiler flags, device details, and actual program output for
