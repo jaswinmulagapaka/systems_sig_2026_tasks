@@ -17,15 +17,12 @@ _Atomic uint64_t total_sum = 0;
 // uint64_t end_index;
 // };
 
-// step 2 struct
 typedef struct
 {
     uint64_t *array;
     uint64_t start;
     uint64_t end;
 } ThreadData;
-
-// step 3 the engine
 
 int sum_array_chunk(void *arg)
 {
@@ -56,14 +53,12 @@ int main()
     {
         massive_array[i] = 1 + i;
     }
-    
+
     thrd_t threads[NUM_THREADS];
     ThreadData thread_data[NUM_THREADS];
-    uint64_t chunk_size = ARRAY_SIZE / NUM_THREADS;    
+    uint64_t chunk_size = ARRAY_SIZE / NUM_THREADS;
 
-    struct timespec start_time, end_time;
-    // Start the stopwatch
-    clock_gettime(CLOCK_MONOTONIC, &start_time);    
+   
 
     printf("spawning %d threads to to calculate sum\n", NUM_THREADS);
     for (int i = 0; i < NUM_THREADS; i++)
@@ -71,17 +66,26 @@ int main()
         thread_data[i].array = massive_array;
         thread_data[i].start = i * chunk_size;
         // thread_data[i].end = (i + 1) * chunk_size;
-      if (i== NUM_THREADS - 1)
+        if (i == NUM_THREADS - 1)
         {
             thread_data[i].end = ARRAY_SIZE; // Last thread takes the remainder
         }
         else
         {
             thread_data[i].end = (i + 1) * chunk_size;
-        }   
+        }
 
+      
+    }
+ struct timespec start_time, end_time;
+
+    // 1. START TIMER: Right before spawning threads
+    clock_gettime(CLOCK_MONOTONIC, &start_time);  
+
+    for (int i = 0; i < NUM_THREADS; i++) {
         thrd_create(&threads[i], sum_array_chunk, &thread_data[i]);
     }
+
 
     printf("waiting for threads to finish \n");
     for (int i = 0; i < NUM_THREADS; i++)
@@ -104,7 +108,7 @@ int main()
     printf("all threads finished \n");
     uint64_t final_sum = atomic_load(&total_sum);
 
-    printf("final sum = %lu \n", (unsigned long )final_sum);
+    printf("final sum = %lu \n", (unsigned long)final_sum);
     free(massive_array);
     return 0;
 }

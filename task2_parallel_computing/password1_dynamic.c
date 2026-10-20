@@ -9,14 +9,14 @@
 
 #define NUM_THREADS 8
 
-// [!] PASTE YOUR RAW HASH STRING HERE
+
 const char *target_hex = "32adca3bde67a61815896740ee954b0b3dea15f6851f1b35079698729081e2ba";
 unsigned char target_hash[SHA256_DIGEST_LENGTH];
 
 _Atomic uint64_t global_ticket = 0; // 0 to 25 for 'a' to 'z'
 _Atomic bool password_found = false;
 
-// The Hex Converter
+
 void hex_to_bytes(const char *hex_string, unsigned char *byte_array) {
     for (int i = 0; i < 32; i++) {
         sscanf(hex_string + 2 * i, "%2hhx", &byte_array[i]);
@@ -34,7 +34,7 @@ int dynamic_brute_force(void *arg) {
         
         guess[0] = 'a' + ticket;
 
-        // 7 Letters = 6 nested loops inside the ticket loop
+      
         for (char c2 = 'a'; c2 <= 'z'; c2++) {
             if (atomic_load(&password_found)) return 0;
             guess[1] = c2;

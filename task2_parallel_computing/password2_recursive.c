@@ -38,8 +38,7 @@ void generate(int pos, int upper_count, int lower_count, char *current_str) {
         }
         return;
     }
-
-    // Math Trapdoor 1: Uppercase allowed?
+// took 3 hrs to figure out this logic, but it works now though i have already delt with in a hacker rank problem, but this is a different one, so i had to figure out the logic again tbh i took help of gemini pro a lot
     if (upper_count < 3) {
         for (char c = 'A'; c <= 'Z'; c++) {
             current_str[pos] = c;
@@ -48,7 +47,6 @@ void generate(int pos, int upper_count, int lower_count, char *current_str) {
         }
     }
 
-    // Math Trapdoor 2: Lowercase allowed?
     if (lower_count < 5) {
         for (char c = 'a'; c <= 'z'; c++) {
             current_str[pos] = c;

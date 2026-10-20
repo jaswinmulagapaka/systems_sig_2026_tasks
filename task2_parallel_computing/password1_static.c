@@ -9,7 +9,7 @@
 
 #define NUM_THREADS 4
 
-// Hash 1 from the assignment
+
 const char *target_hex = "32adca3bde67a61815896740ee954b0b3dea15f6851f1b35079698729081e2ba";
 unsigned char target_hash[SHA256_DIGEST_LENGTH];
 
@@ -25,7 +25,7 @@ void hex_to_bytes(const char *hex_string, unsigned char *byte_array) {
 int static_brute_force(void *arg) {
     int thread_id = *(int*)arg;
     
-    // Static Chunking: Divide 26 letters among NUM_THREADS
+   
     int chunk_size = 26 / NUM_THREADS;
     char start_char = 'a' + (thread_id * chunk_size);
     char end_char = (thread_id == NUM_THREADS - 1) ? 'z' : start_char + chunk_size - 1;

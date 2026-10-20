@@ -56,6 +56,8 @@ int sum_thread(void *arg)
     // THE HYBRID MOVE:
     // The thread is about to die. It drops its lifetime total into its
     // designated array slot. Zero atomic locks needed.
+
+    // i delibrately used false sharing here to show the performance difference between this and the lockfree version/*  */
     thread_results[my_data->thread_id] = thread_total_sum;
 
     return 0;
