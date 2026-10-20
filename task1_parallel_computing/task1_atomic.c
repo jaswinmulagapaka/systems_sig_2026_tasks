@@ -7,7 +7,7 @@
 #include <stdatomic.h>
 #include <time.h>
 
-#define NUM_THREADS 1
+#define NUM_THREADS 4
 
 _Atomic uint64_t total_sum = 0;
 
