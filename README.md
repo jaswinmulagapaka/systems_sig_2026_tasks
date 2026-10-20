@@ -75,7 +75,7 @@ The expected result follows from:
 S = N(N + 1) / 2
 
 For N = 100,000,000:
-S = 5000000050000000
+S = 5,000,000,050,000,000
 ```
 
 The source files should be checked to confirm that they all use this input
@@ -431,7 +431,7 @@ The total number of candidates is:
 ```
 
 password 1 is threadz it came in around 5 mins i dint accurately measure it 
-password2 i ran the code for 15hrs but did not get any output though my 8 cores were running the program did not crash 
+password2 i ran the code for 15hrs but did not get any output though my 8 cores were running the program did not crash  i did not run the entire test case i stopped in middle 
            the cores were not fixed as i dint uses any thread pining 
            so linux CFS was changing my threads(software) to run on differnt cores 
           so i got a guess and checked password all 56 combinations but it did not match lol 
