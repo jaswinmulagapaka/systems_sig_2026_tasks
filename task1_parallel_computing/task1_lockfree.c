@@ -8,7 +8,7 @@
 #define NUM_THREADS 4
 #define ARRAY_SIZE 100000000 
 
-uint32_t *massive_array;
+uint64_t *massive_array;
 
 // STRUCT WITH ALIGNMENT PADDING: Forces each thread's answer onto its own 
 // separate 64-byte cache line, completely eliminating false sharing.

@@ -14,7 +14,7 @@
 _Atomic uint64_t global_index = 0;
 
 
-uint32_t *massive_array;
+uint64_t *massive_array;
 uint64_t thread_results[NUM_THREADS] = {0};
 
 
