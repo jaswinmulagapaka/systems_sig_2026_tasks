@@ -1,7 +1,5 @@
 # WEC Systems & Security SIG 2026
 
-## Concurrency & Systems Programming in C
-
 **M. Jaswin** · C11 · POSIX Threads · Atomics · SHA-256 · ARM64
 
 
