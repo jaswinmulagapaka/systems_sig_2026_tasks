@@ -20,7 +20,9 @@
 each of my file has its own main()
 
 ## 1. Task 1 — Parallel Array Reduction
-sum of 100 million elements 
+sum of 100 million elements   
+
+
 we use atomic operations in the first place because if we use petersons alogorithms they are prone to out of order executions of modren compilers 
 
 
