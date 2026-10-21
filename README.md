@@ -4,17 +4,6 @@
 
 **M. Jaswin** · C11 · POSIX Threads · Atomics · SHA-256 · ARM64
 
-A collection of C programs developed for the WEC Systems & Security SIG 2026
-recruitment tasks. The project explores parallel array reduction, atomic
-synchronization, dynamic work allocation, cache alignment, and multithreaded
-SHA-256 candidate search.
-
-It includes three approaches to parallel array summation, recursive and
-iterative search implementations, and a native ARM64 execution experiment on
-an Android device powered by the MediaTek Dimensity 8450.
-
-The focus is on understanding the trade-offs between concurrency strategies
-through implementation, testing, and benchmarking.
 
 ## What I Explored
 
