@@ -26,6 +26,10 @@ sum of 100 million elements
 we use atomic operations in the first place because if we use petersons alogorithms they are prone to out of order executions of modren compilers 
 
 
+also one more thing threads are like the software programs which do a particular task concurently in one core or paralelly in different cores  cores are the real hardware things which do the work 
+
+
+also modren single core processors fastly switch between processes which can look like parallelism but its actually concurency 
 
 ### Common Workload
 800MB array same input in all the cases 1 to 100Million 
