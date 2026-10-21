@@ -45,7 +45,7 @@ i used an array to be precise a structure using alignment to make it 64 byte  so
 
 #### Cache Alignment
 
-T `alignas(64)`  is a request to give 64 bytes memory to that variable 
+ `alignas(64)`  is a request to give 64 bytes memory to that variable 
  actually false sharing is a concequency of cache coherancy protocol mesi it which though they are updating diff variables if they lie in the same 
  cache line(think of it as a car which moves across the l1 l2 l3 ram to bring stuff) 
  so if 2 diff variables are in the same cache line mesi invalidates the variable in other threads 
