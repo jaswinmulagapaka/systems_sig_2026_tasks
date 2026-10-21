@@ -66,8 +66,6 @@ i just tried to make a table to show which works fast
 
 intel core ultra 9 185H
 
-Five runs were reported for each implementation.
-
 | Implementation | Run 1 (s) | Run 2 (s) | Run 3 (s) | Run 4 (s) | Run 5 (s) | Mean (s) |
 |---|---:|---:|---:|---:|---:|---:|
 | `task1_atomic.c` | 0.02306 | 0.02686 | 0.02304 | 0.02066 | 0.02694 | 0.02411 |
