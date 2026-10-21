@@ -10,17 +10,16 @@
 | Area | Approach |
 |---|---|
 | Parallel Reduction | Shared atomic total vs. per-thread result slots |
-| Work Distribution | Static ranges vs. dynamic atomic chunk allocation |
+| Work Distribution | Static ranges vs. dynamic  allocation |
 | Synchronization | C11 atomics and cooperative termination |
-| Cache Alignment | `alignas(64)` and per-thread result storage |
-| SHA-256 Search | Static and dynamic search-space partitioning |
-| Candidate Generation | Recursive traversal vs. nested loops |
-| Digest Comparison | Raw binary digest comparison using `memcmp()` |
-| Cross-Architecture Execution | Ubuntu x86-64 and Android ARM64 |
+| Cache Alignment | `alignas(64)` and array slot  |
+| SHA-256 Search | Static and dynamic versions of code  |
+| permutations  | recursions vs for loops  |
+| comparisions  | memcmp vs strcmp and sprintf |
+| Cross-compiling | Ubuntu x86-64 and Android ARM64 |
 
 
-Each source file contains its own `main()` function and is compiled
-independently.
+each of my file has its own main()
 
 ## 1. Task 1 — Parallel Array Reduction
 sum of 100 million elements 
@@ -29,7 +28,7 @@ sum of 100 million elements
 ### Common Workload
 800MB array same input in all the cases 1 to 100Million 
 
-### Timing Methodology
+### Timing 
 clock starts right before threads are created and stops right afer thrd_join 
 
 ### `task1_atomic.c` — Shared Atomic Accumulator
@@ -89,7 +88,7 @@ mediatek dimensity 8450
 | `task1_lockfree.c` | 1 | 0.01179 |
 here lock free was the fastest 
 
-## 2. Bonus — ARM64 Execution on Android
+## 2. Bonus — task cross compiling 
  i used termux native compilation which uses clang under the hood but command alias is gcc which points to clang and bionic libc 
  
  i dint use android ndk as its difficult i tried learning but i dint understand it 
@@ -157,5 +156,4 @@ then i for fun assumed the password2 might be the word password all 56 combinati
 ## Conclusion
 i learned a  lot about cpu hardware cpu architectures and all as i am an ece student i am intrested in the intersection of software and hardware so i tried this task 
 please ignore my spelling mistakes
-
 
